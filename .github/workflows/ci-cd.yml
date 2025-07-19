@@ -13,28 +13,23 @@ jobs:
       matrix:
         environment: [dev, staging, prod]
 
-    env:
-      AWS_REGION: ${{ env.AWS_REGION }}
-      PROJECT_NAME: ${{ env.PROJECT_NAME }}
-      DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name:  Set up Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name:  Configure AWS credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: $AWS_REGION
 
-      - name:  Log in to Amazon ECR
+      - name: Log in to Amazon ECR
         id: login-ecr
         run: |
           ECR_REGISTRY=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com
@@ -43,7 +38,7 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE_URI="$ECR_REGISTRY/${{ env.PROJECT_NAME }}-${{ matrix.environment }}-repo:latest"
+          IMAGE_URI="$ECR_REGISTRY/${PROJECT_NAME}-${{ matrix.environment }}-repo:latest"
           echo "ECR_IMAGE=$IMAGE_URI" >> $GITHUB_ENV 
           docker build -t $IMAGE_URI ./app
           docker push $IMAGE_URI
@@ -62,8 +57,8 @@ jobs:
       - name: Deploy to ${{ matrix.environment }} with CDKTF
         working-directory: ./iac
         env:
-          ECR_IMAGE: ${{ env.ECR_IMAGE }}
-          AWS_REGION: ${{ env.AWS_REGION }}
+          ECR_IMAGE: $ECR_IMAGE
+          AWS_REGION: $AWS_REGION
           ENV: ${{ matrix.environment }}
-          DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
+          DOMAIN_NAME: $DOMAIN_NAME
         run: cdktf deploy --auto-approve
