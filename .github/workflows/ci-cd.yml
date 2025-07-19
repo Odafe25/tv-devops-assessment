@@ -39,7 +39,13 @@ jobs:
       - name: Set variables for project
         run: |
           echo "PROJECT_NAME=tv-devops" >> $GITHUB_ENV
-          
+      
+      - name: Ensure ECR repository exists or Create it
+        run: |
+          aws ecr describe-repositories --repository-names ${PROJECT_NAME}-${{ matrix.environment }}-repo || \
+          aws ecr create-repository --repository-name ${PROJECT_NAME}-${{ matrix.environment }}-repo
+      
+
       - name: Build and push Docker image
         run: |
           IMAGE_URI="$ECR_REGISTRY/${PROJECT_NAME}-${{ matrix.environment }}-repo:latest"
