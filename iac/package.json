@@ -1,0 +1,24 @@
+{
+    "name": "tv-devops-infra",
+    "version": "1.0.0",
+    "description": "CDK for Terraform infrastructure for TurboVets assessment",
+    "main": "main.ts",
+    "scripts": {
+      "build": "tsc",
+      "synth": "npx cdktf synth",
+      "deploy": "npx cdktf deploy",
+      "destroy": "npx cdktf destroy"
+    },
+    "keywords": [],
+    "author": "OdafeAsagba",
+    "license": "MIT",
+    "dependencies": {
+      "@cdktf/provider-aws": "^18.0.27",
+      "cdktf": "^0.20.4",
+      "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+      "typescript": "^5.4.0"
+    }
+  }
+  

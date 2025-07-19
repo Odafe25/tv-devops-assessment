@@ -1,0 +1,10 @@
+# Terraform
+.terraform/
+cdk.out/
+terraform.tfstate*
+terraform.tfvars
+*.backup
+
+# cdktf
+node_modules/
+.env

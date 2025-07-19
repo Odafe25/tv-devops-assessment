@@ -1,0 +1,69 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        environment: [dev, staging, prod]
+
+    env:
+      AWS_REGION: ${{ env.AWS_REGION }}
+      PROJECT_NAME: ${{ env.PROJECT_NAME }}
+      DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name:  Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name:  Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name:  Log in to Amazon ECR
+        id: login-ecr
+        run: |
+          ECR_REGISTRY=$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com
+          echo "ECR_REGISTRY=$ECR_REGISTRY" >> $GITHUB_ENV
+          aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_URI="$ECR_REGISTRY/${{ env.PROJECT_NAME }}-${{ matrix.environment }}-repo:latest"
+          echo "ECR_IMAGE=$IMAGE_URI" >> $GITHUB_ENV 
+          docker build -t $IMAGE_URI ./app
+          docker push $IMAGE_URI
+
+      - name: Install CDKTF
+        run: npm install --global cdktf-cli
+
+      - name: Install project dependencies
+        working-directory: ./iac
+        run: npm install
+
+      - name: Compile TypeScript
+        working-directory: ./iac
+        run: npm run build
+
+      - name: Deploy to ${{ matrix.environment }} with CDKTF
+        working-directory: ./iac
+        env:
+          ECR_IMAGE: ${{ env.ECR_IMAGE }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          ENV: ${{ matrix.environment }}
+          DOMAIN_NAME: ${{ env.DOMAIN_NAME }}
+        run: cdktf deploy --auto-approve
