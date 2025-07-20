@@ -3,11 +3,12 @@ import { TerraformIterator, Fn } from "cdktf";
 import { Vpc } from "@cdktf/provider-aws/lib/vpc";
 import { Subnet } from "@cdktf/provider-aws/lib/subnet";
 import { SecurityGroup } from "@cdktf/provider-aws/lib/security-group";
+import { DataAwsAvailabilityZones } from "@cdktf/provider-aws/lib/data-aws-availability-zones";
 
 export interface VpcProps {
   project: string;
   cidrBlock: string;
-  azs: string[];
+  maxAzs?: number; // Optional: limit number of AZs to use
 }
 
 export class VpcModule extends Construct {
@@ -25,22 +26,24 @@ export class VpcModule extends Construct {
       tags: { Name: `${props.project}-vpc` },
     });
 
-    // Create a map of AZ to index for CIDR calculation
-    const azToIndex: { [key: string]: number } = {};
-    props.azs.forEach((az, index) => {
-      azToIndex[az] = index + 1; // Start from 1 instead of 0
+    // Get available AZs dynamically
+    const availableAzs = new DataAwsAvailabilityZones(this, "available", {
+      state: "available",
     });
 
-    const azIterator = TerraformIterator.fromMap(azToIndex);
+    // Create a simple numeric iterator for the number of AZs we want to use
+    const maxAzs = props.maxAzs || 3; // Default to 3 AZs
+    const azIndexes = Array.from({ length: maxAzs }, (_, i) => i.toString());
+    const azIterator = TerraformIterator.fromList(azIndexes);
     
     const subnetResource = new Subnet(this, "subnet", {
       forEach: azIterator,
       vpcId: this.vpc.id,
-      cidrBlock: `10.0.\${${azIterator.value}}.0/24`, // Use iterator.value (the numeric index)
-      availabilityZone: azIterator.key, // Use iterator.key (the AZ name)
+      cidrBlock: Fn.cidrsubnet(props.cidrBlock, 8, parseInt(azIterator.value)), // Use cidrsubnet function
+      availabilityZone: Fn.element(availableAzs.names, parseInt(azIterator.value)), // Get AZ by index
       mapPublicIpOnLaunch: true,
       tags: { 
-        Name: `${props.project}-subnet-\${${azIterator.key}}` // Use AZ name in tag
+        Name: `${props.project}-subnet-\${${azIterator.value}}` 
       },
     });
 
