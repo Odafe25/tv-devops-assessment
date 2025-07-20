@@ -77,6 +77,11 @@ jobs:
         with:
           terraform_version: 1.6.6
 
+      - name: Build IaC now
+        working-directory: ./iac
+        run: npm run build
+
+
       - name: Deploy to ${{ matrix.environment }} with CDKTF
         working-directory: ./iac
         env:
@@ -84,4 +89,4 @@ jobs:
           AWS_REGION: $AWS_REGION
           ENV: ${{ matrix.environment }}
           DOMAIN_NAME: $DOMAIN_NAME
-        run: cdktf deploy --auto-approve --app "node main.js"
+        run: cdktf deploy --auto-approve 
