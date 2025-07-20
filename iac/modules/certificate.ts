@@ -13,7 +13,7 @@ export interface CertProps {
   albZoneId: string;
 }
 
-export class CertModule extends Construct {
+export class CertificateModule extends Construct {
   constructor(scope: Construct, id: string, props: CertProps) {
     super(scope, id);
 
