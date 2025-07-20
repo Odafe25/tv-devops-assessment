@@ -26,21 +26,21 @@ export class VpcModule extends Construct {
       tags: { Name: `${props.project}-vpc` },
     });
 
-    
+  
     const availableAzs = new DataAwsAvailabilityZones(this, "available", {
       state: "available",
     });
 
     
-    const maxAzs = props.maxAzs || 3; // Default to 3 AZs
-    const azIndexes = Array.from({ length: maxAzs }, (_, i) => i);
+    const maxAzs = props.maxAzs || 3; 
+    const azIndexes = Array.from({ length: maxAzs }, (_, i) => i.toString());
     const azIterator = TerraformIterator.fromList(azIndexes);
     
     const subnetResource = new Subnet(this, "subnet", {
       forEach: azIterator,
       vpcId: this.vpc.id,
-      cidrBlock: Fn.cidrsubnet(props.cidrBlock, 8, azIterator.value), // azIterator.value is already a number
-      availabilityZone: Fn.element(availableAzs.names, azIterator.value), // azIterator.value is already a number
+      cidrBlock: Fn.cidrsubnet(props.cidrBlock, 8, Fn.tonumber(azIterator.value)), // Convert string to number
+      availabilityZone: Fn.element(availableAzs.names, Fn.tonumber(azIterator.value)), // Convert string to number
       mapPublicIpOnLaunch: true,
       tags: { 
         Name: `${props.project}-subnet-\${${azIterator.value}}` 
