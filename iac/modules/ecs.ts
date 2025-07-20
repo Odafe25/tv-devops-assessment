@@ -1,41 +1,53 @@
 import { Construct } from "constructs";
-import * as aws from "@cdktf/provider-aws";
-import { Fn } from "cdktf";
+import { EcsCluster } from "@cdktf/provider-aws/lib/ecs-cluster";
+import { IamRolePolicyAttachment } from "@cdktf/provider-aws/lib/iam-role-policy-attachment";
+import { EcsTaskDefinition } from "@cdktf/provider-aws/lib/ecs-task-definition";
+import { EcsService } from "@cdktf/provider-aws/lib/ecs-service";
 
-export interface EcsProps { env: string; project: string; vpc: any; repoUrl: string; }
+export interface EcsProps {
+  project: string;
+  clusterName: string;
+  executionRoleArn: string;
+  taskRoleArn: string;
+  containerImage: string;
+  containerPort: number;
+}
+
 export class EcsModule extends Construct {
-  public readonly clusterName: string;
+  public readonly clusterArn: string;
 
   constructor(scope: Construct, id: string, props: EcsProps) {
     super(scope, id);
-    const cluster = new aws.ecs.EcsCluster(this, "cluster", {
-      name: `${props.project}-cluster`,
-    });
-    this.clusterName = cluster.name;
 
-    const role = new aws.iam.IamRole(this, "exec-role", {
-      name: `${props.project}-exec-role`,
-      assumeRolePolicy: JSON.stringify({
-        Version: "2012-10-17",
-        Statement: [{ Effect: "Allow", Principal: { Service: "ecs-tasks.amazonaws.com" }, Action: "sts:AssumeRole" }],
-      }),
+    const cluster = new EcsCluster(this, "cluster", {
+      name: props.clusterName,
     });
 
-    new aws.iam.IamRolePolicyAttachment(this, "exec-policy", {
-      role: role.name,
+    new IamRolePolicyAttachment(this, "execAttach", {
+      role: props.executionRoleArn,
       policyArn: "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     });
 
-    new aws.ecs.EcsTaskDefinition(this, "task", {
-      family: `${props.project}-task`, 
-      executionRoleArn: role.arn,
+    const taskDef = new EcsTaskDefinition(this, "taskDef", {
+      family: `${props.project}-task`,
       networkMode: "awsvpc",
       requiresCompatibilities: ["FARGATE"],
       cpu: "256",
       memory: "512",
-      containerDefinitions: Fn.jsonencode([
-        { name: "app", image: props.repoUrl, essential: true, portMappings: [{ containerPort: 3000 }] }
-      ]),
+      executionRoleArn: props.executionRoleArn,
+      taskRoleArn: props.taskRoleArn,
+      containerDefinitions: JSON.stringify([{ name: props.project, image: props.containerImage, portMappings: [{ containerPort: props.containerPort }], essential: true }]),
     });
+
+    new EcsService(this, "service", {
+      name: `${props.project}-service`,
+      cluster: cluster.arn,
+      taskDefinition: taskDef.arn,
+      desiredCount: 1,
+      launchType: "FARGATE",
+      networkConfiguration: [{ subnets: [], securityGroups: [], assignPublicIp: true }],
+    });
+
+    this.clusterArn = cluster.arn;
   }
 }

@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import * as aws from "@cdktf/provider-aws";
+import { CloudwatchLogGroup } from "@cdktf/provider-aws/lib/cloudwatch-log-group";
 
 export interface LoggingProps { env: string; project: string; clusterName: string; }
 export class LoggingModule extends Construct {

@@ -1,42 +1,42 @@
 import { Construct } from "constructs";
-import * as aws from "@cdktf/provider-aws";
+import { Vpc } from "@cdktf/provider-aws/lib/vpc-vpc";
+import { Subnet } from "@cdktf/provider-aws/lib/vpc-subnet";
+import { SecurityGroup } from "@cdktf/provider-aws/lib/vpc-security-group";
 
-export interface VpcProps { env: string; region: string; project: string; }
+export interface VpcProps {
+  project: string;
+  cidrBlock: string;
+  azs: string[];
+}
+
 export class VpcModule extends Construct {
-  public readonly subnets: aws.vpc.Subnet[];
-  public readonly securityGroupIds: string[];
+  public readonly vpc: Vpc;
+  public readonly publicSubnets: Subnet[];
+  public readonly securityGroup: SecurityGroup;
 
   constructor(scope: Construct, id: string, props: VpcProps) {
     super(scope, id);
 
-    const vpc = new aws.vpc.Vpc(this, "vpc", {
-      cidrBlock: "10.0.0.0/16",
+    this.vpc = new Vpc(this, "vpc", {
+      cidrBlock: props.cidrBlock,
       enableDnsSupport: true,
       enableDnsHostnames: true,
-      tags: { Name: `${props.project}-vpc` },
     });
 
-    const azs = ["a", "b"];
-    this.subnets = azs.map((az, i) =>
-      new aws.vpc.Subnet(this, `subnet-${az}`, {
-        vpcId: vpc.id,
-        cidrBlock: `10.0.${i + 1}.0/24`,
-        availabilityZone: `${props.region}${az}`,
-        mapPublicIpOnLaunch: true,
-        tags: { Name: `${props.project}-subnet-${az}` },
+    this.publicSubnets = props.azs.map((az, idx) =>
+      new Subnet(this, `subnet-${az}`, {
+        vpcId: this.vpc.id,
+        cidrBlock: `10.0.${idx}.0/24`,
+        availabilityZone: az,
       })
     );
 
-    const sg = new aws.vpc.SecurityGroup(this, "sg", {
-      vpcId: vpc.id,
-      ingress: [
-        { fromPort: 80, toPort: 80, protocol: "tcp", cidrBlocks: ["0.0.0.0/0"] },
-        { fromPort: 443, toPort: 443, protocol: "tcp", cidrBlocks: ["0.0.0.0/0"] },
-      ],
+    this.securityGroup = new SecurityGroup(this, "sg", {
+      name: `${props.project}-sg`,
+      description: "Allow HTTP",
+      vpcId: this.vpc.id,
+      ingress: [{ fromPort: 80, toPort: 80, protocol: "tcp", cidrBlocks: ["0.0.0.0/0"] }],
       egress: [{ fromPort: 0, toPort: 0, protocol: "-1", cidrBlocks: ["0.0.0.0/0"] }],
-      tags: { Name: `${props.project}-sg` },
     });
-
-    this.securityGroupIds = [sg.id];
   }
 }

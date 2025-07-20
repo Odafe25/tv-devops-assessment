@@ -60,6 +60,10 @@ jobs:
         working-directory: ./iac
         run: npm install
 
+      - name: Install Node type definitions
+        working-directory: ./iac
+        run: npm install --save-dev @types/node
+
       - name: Compile TypeScript
         working-directory: ./iac
         run: npm run build
