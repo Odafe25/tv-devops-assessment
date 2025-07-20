@@ -3,3 +3,4 @@ dist
 .git
 *.log
 Dockerfile
+.DS_Store
