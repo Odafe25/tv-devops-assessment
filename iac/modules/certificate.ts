@@ -44,7 +44,7 @@ export class CertificateModule extends Construct {
     
     new AcmCertificateValidation(this, "cert-validate", {
       certificateArn: cert.arn,
-      validationRecordFqdns: validationRecord.fqdn,
+      validationRecordFqdns: [validationRecord.fqdn],
       timeouts: {
         create: "5m",
       },
