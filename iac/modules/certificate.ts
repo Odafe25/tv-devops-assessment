@@ -5,6 +5,7 @@ import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificat
 import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
 
 export interface CertProps {
+  env: string;
   domainName: string;
   subdomain: string;
   hostedZoneId: string;
