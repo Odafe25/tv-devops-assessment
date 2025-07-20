@@ -71,7 +71,7 @@ export class InfraStack extends TerraformStack {
       taskRoleArn:     taskRole.arn,
       containerImage:  ecr.repositoryUrl,
       containerPort:   3000,
-      subnets:          vpc.publicSubnets.map(s => s.id),
+      subnets: [vpc.publicSubnets.id],
       securityGroups:   [ vpc.securityGroup.id ],
     });
 
@@ -80,7 +80,7 @@ export class InfraStack extends TerraformStack {
       project,
       env,
       vpc: vpc.vpc,
-      subnets:        vpc.publicSubnets.map(s => s.id),
+      subnets: [vpc.publicSubnets.id],
       securityGroups: [ vpc.securityGroup.id ],
     });
 

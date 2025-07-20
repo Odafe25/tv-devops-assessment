@@ -1,4 +1,5 @@
 import { Construct } from "constructs";
+import { TerraformIterator, Fn } from "cdktf";
 import { Vpc } from "@cdktf/provider-aws/lib/vpc";
 import { Subnet } from "@cdktf/provider-aws/lib/subnet";
 import { SecurityGroup } from "@cdktf/provider-aws/lib/security-group";
@@ -16,6 +17,7 @@ export class VpcModule extends Construct {
 
   constructor(scope: Construct, id: string, props: VpcProps) {
     super(scope, id);
+    
     this.vpc = new Vpc(this, "vpc", {
       cidrBlock: props.cidrBlock,
       enableDnsSupport: true,
@@ -23,15 +25,22 @@ export class VpcModule extends Construct {
       tags: { Name: `${props.project}-vpc` },
     });
 
-    this.publicSubnets = props.azs.map((az, idx) =>
-      new Subnet(this, `subnet-${az}`, {
-        vpcId: this.vpc.id,
-        cidrBlock: `10.0.${idx}.0/24`,
-        availabilityZone: az,
-        mapPublicIpOnLaunch: true,
-        tags: { Name: `${props.project}-subnet-${az}` },
-      })
-    );
+    
+    const azIterator = TerraformIterator.fromList(props.azs);
+    
+    const subnetResource = new Subnet(this, "subnet", {
+      forEach: azIterator,
+      vpcId: this.vpc.id,
+      cidrBlock: `10.0.\${${azIterator.key}}.0/24`,
+      availabilityZone: azIterator.value,
+      mapPublicIpOnLaunch: true,
+      tags: { 
+        Name: `${props.project}-subnet-\${${azIterator.value}}` 
+      },
+    });
+
+    
+    this.publicSubnets = [subnetResource];
 
     this.securityGroup = new SecurityGroup(this, "sg", {
       name: `${props.project}-sg`,
