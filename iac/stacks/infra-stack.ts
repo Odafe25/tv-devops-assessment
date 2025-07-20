@@ -92,6 +92,7 @@ export class InfraStack extends TerraformStack {
       certificateName: `${project}-cert`,
       albDnsName:      alb.dnsName,
       albZoneId:       alb.zoneId,
+      env
     });
 
     // Logging
