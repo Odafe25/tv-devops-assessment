@@ -27,7 +27,7 @@ export class CertificateModule extends Construct {
       tags: { Name: props.certificateName },
     });
 
-    const validationOption = Fn.element(cert.domainValidationOptions, 0);
+    const validationOption = Fn.element(cert.domainValidationOptions, 0) as any;
 
     const record = new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
