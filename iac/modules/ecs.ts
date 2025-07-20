@@ -11,6 +11,8 @@ export interface EcsProps {
   taskRoleArn: string;
   containerImage: string;
   containerPort: number;
+  subnets: string[];
+  securityGroups: string[];
 }
 
 export class EcsModule extends Construct {
@@ -18,10 +20,7 @@ export class EcsModule extends Construct {
 
   constructor(scope: Construct, id: string, props: EcsProps) {
     super(scope, id);
-
-    const cluster = new EcsCluster(this, "cluster", {
-      name: props.clusterName,
-    });
+    const cluster = new EcsCluster(this, "cluster", { name: props.clusterName });
 
     new IamRolePolicyAttachment(this, "execAttach", {
       role: props.executionRoleArn,
@@ -36,7 +35,14 @@ export class EcsModule extends Construct {
       memory: "512",
       executionRoleArn: props.executionRoleArn,
       taskRoleArn: props.taskRoleArn,
-      containerDefinitions: JSON.stringify([{ name: props.project, image: props.containerImage, portMappings: [{ containerPort: props.containerPort }], essential: true }]),
+      containerDefinitions: JSON.stringify([
+        {
+          name: props.project,
+          image: props.containerImage,
+          portMappings: [{ containerPort: props.containerPort }],
+          essential: true,
+        },
+      ]),
     });
 
     new EcsService(this, "service", {
@@ -45,7 +51,11 @@ export class EcsModule extends Construct {
       taskDefinition: taskDef.arn,
       desiredCount: 1,
       launchType: "FARGATE",
-      networkConfiguration: [{ subnets: [], securityGroups: [], assignPublicIp: true }],
+      networkConfiguration: {
+        subnets: props.subnets,
+        securityGroups: props.securityGroups,
+        assignPublicIp: true,
+      },
     });
 
     this.clusterArn = cluster.arn;

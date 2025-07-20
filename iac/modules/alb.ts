@@ -6,7 +6,7 @@ import { LbListener } from "@cdktf/provider-aws/lib/lb-listener";
 export interface AlbProps {
   env: string;
   project: string;
-  vpc: any;
+  vpc: { id: string };
   subnets: string[];
   securityGroups: string[];
 }
@@ -50,7 +50,7 @@ export class AlbModule extends Construct {
     });
 
     this.dnsName = lb.dnsName;
-    this.zoneId = lb.canonicalHostedZoneId;
+    this.zoneId = lb.zoneId;
     this.arn = lb.arn;
   }
 }

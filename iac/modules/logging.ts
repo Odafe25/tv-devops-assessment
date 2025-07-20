@@ -1,21 +1,20 @@
 import { Construct } from "constructs";
 import { CloudwatchLogGroup } from "@cdktf/provider-aws/lib/cloudwatch-log-group";
 
-export interface LoggingProps { env: string; project: string; clusterName: string; }
+export interface LoggingProps {
+  project: string;
+  retentionInDays?: number;
+}
+
 export class LoggingModule extends Construct {
+  public readonly logGroupName: string;
+
   constructor(scope: Construct, id: string, props: LoggingProps) {
     super(scope, id);
-    new aws.cloudwatch.CloudwatchLogGroup(this, "log-group", {
-      name: `/ecs/${props.project}`,
-      retentionInDays: 7,
+    const logGroup = new CloudwatchLogGroup(this, "logGroup", {
+      name: `${props.project}-logs`,
+      retentionInDays: props.retentionInDays ?? 14,
     });
-
-    new aws.cloudwatch.CloudwatchMetricAlarm(this, "cpu-alarm", {
-      alarmName: `${props.project}-high-cpu`,
-      namespace: "AWS/ECS", metricName: "CPUUtilization",
-      period: 60, evaluationPeriods: 2, threshold: 75,
-      comparisonOperator: "GreaterThanThreshold",
-      dimensions: { ClusterName: props.clusterName, ServiceName: `${props.project}-service` },
-    });
+    this.logGroupName = logGroup.name;
   }
 }

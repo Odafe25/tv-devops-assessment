@@ -17,7 +17,6 @@ export class CertificateModule extends Construct {
 
   constructor(scope: Construct, id: string, props: CertificateProps) {
     super(scope, id);
-
     const fqdn = `${props.subdomain}.${props.domainName}`;
 
     const cert = new AcmCertificate(this, "cert", {
@@ -27,17 +26,19 @@ export class CertificateModule extends Construct {
       tags: { Name: props.certificateName },
     });
 
-    const record = new Route53Record(this, "cert-record", {
+    const opt = cert.domainValidationOptions.get(0);
+
+    new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
-      name: cert.domainValidationOptions![0].resourceRecordName!,
-      type: cert.domainValidationOptions![0].resourceRecordType!,
+      name: opt.resourceRecordName,
+      type: opt.resourceRecordType,
       ttl: 60,
-      records: [cert.domainValidationOptions![0].resourceRecordValue!],
+      records: [opt.resourceRecordValue],
     });
 
     new AcmCertificateValidation(this, "certValidation", {
       certificateArn: cert.arn,
-      validationRecordFqdns: [record.fqdn],
+      validationRecordFqdns: [opt.resourceRecordName!],
     });
 
     new Route53Record(this, "alb-dns", {

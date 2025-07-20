@@ -1,7 +1,7 @@
 import { Construct } from "constructs";
-import { Vpc } from "@cdktf/provider-aws/lib/vpc-vpc";
-import { Subnet } from "@cdktf/provider-aws/lib/vpc-subnet";
-import { SecurityGroup } from "@cdktf/provider-aws/lib/vpc-security-group";
+import { Vpc } from "@cdktf/provider-aws/lib/vpc";
+import { Subnet } from "@cdktf/provider-aws/lib/subnet";
+import { SecurityGroup } from "@cdktf/provider-aws/lib/security-group";
 
 export interface VpcProps {
   project: string;
@@ -16,11 +16,11 @@ export class VpcModule extends Construct {
 
   constructor(scope: Construct, id: string, props: VpcProps) {
     super(scope, id);
-
     this.vpc = new Vpc(this, "vpc", {
       cidrBlock: props.cidrBlock,
       enableDnsSupport: true,
       enableDnsHostnames: true,
+      tags: { Name: `${props.project}-vpc` },
     });
 
     this.publicSubnets = props.azs.map((az, idx) =>
@@ -28,6 +28,8 @@ export class VpcModule extends Construct {
         vpcId: this.vpc.id,
         cidrBlock: `10.0.${idx}.0/24`,
         availabilityZone: az,
+        mapPublicIpOnLaunch: true,
+        tags: { Name: `${props.project}-subnet-${az}` },
       })
     );
 
@@ -35,8 +37,15 @@ export class VpcModule extends Construct {
       name: `${props.project}-sg`,
       description: "Allow HTTP",
       vpcId: this.vpc.id,
-      ingress: [{ fromPort: 80, toPort: 80, protocol: "tcp", cidrBlocks: ["0.0.0.0/0"] }],
-      egress: [{ fromPort: 0, toPort: 0, protocol: "-1", cidrBlocks: ["0.0.0.0/0"] }],
+      ingress: [
+        { fromPort: 80, toPort: 80, protocol: "tcp", cidrBlocks: ["0.0.0.0/0"] },
+        { fromPort: 443, toPort: 443, protocol: "tcp", cidrBlocks: ["0.0.0.0/0"] },
+      ],
+      egress: [
+        { fromPort: 0, toPort: 0, protocol: "-1", cidrBlocks: ["0.0.0.0/0"] },
+      ],
+      tags: { Name: `${props.project}-sg` },
     });
   }
 }
+

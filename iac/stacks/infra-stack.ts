@@ -71,6 +71,8 @@ export class InfraStack extends TerraformStack {
       taskRoleArn:     taskRole.arn,
       containerImage:  ecr.repositoryUrl,
       containerPort:   3000,
+      subnets:          vpc.publicSubnets.map(s => s.id),
+      securityGroups:   [ vpc.securityGroup.id ],
     });
 
     // ALB
