@@ -1,7 +1,8 @@
 import { Construct } from "constructs";
-import { Fn } from "cdktf";
-import { acmCertificate, acmCertificateValidation } from "@cdktf/provider-aws"; //  /lib/acm
-import { route53Record } from "@cdktf/provider-aws";  // /lib/route53
+import { Fn, TerraformOutput } from "cdktf";
+import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
+import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
+import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
 
 export interface CertProps {
   env: string;
@@ -14,17 +15,19 @@ export interface CertProps {
 }
 
 export class CertificateModule extends Construct {
+  public readonly certArn: string;
+
   constructor(scope: Construct, id: string, props: CertProps) {
     super(scope, id);
 
-    const cert = new acmCertificate(this, "cert", {
+    const cert = new AcmCertificate(this, "cert", {
       domainName: props.subdomain,
       validationMethod: "DNS",
       lifecycle: { createBeforeDestroy: true },
       tags: { Name: props.certificateName },
     });
 
-    const record = new route53Record(this, "cert-record", {
+    const record = new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
       name: Fn.element(cert.domainValidationOptions, 0).resourceRecordName,
       type: Fn.element(cert.domainValidationOptions, 0).resourceRecordType,
@@ -32,12 +35,12 @@ export class CertificateModule extends Construct {
       records: [Fn.element(cert.domainValidationOptions, 0).resourceRecordValue],
     });
 
-    new acmCertificateValidation(this, "cert-validate", {
+    new AcmCertificateValidation(this, "cert-validate", {
       certificateArn: cert.arn,
       validationRecordFqdns: [record.fqdn],
     });
 
-    new route53Record(this, "alb-dns", {
+    new Route53Record(this, "alb-dns", {
       zoneId: props.hostedZoneId,
       name: props.subdomain,
       type: "A",
@@ -46,6 +49,12 @@ export class CertificateModule extends Construct {
         zoneId: props.albZoneId,
         evaluateTargetHealth: true,
       },
+    });
+
+    this.certArn = cert.arn;
+
+    new TerraformOutput(this, "certificate_arn", {
+      value: this.certArn,
     });
   }
 }
