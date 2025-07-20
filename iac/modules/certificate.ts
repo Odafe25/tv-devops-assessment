@@ -1,4 +1,3 @@
-// File: modules/certificate.ts
 import { Construct } from "constructs";
 import { Fn, TerraformOutput } from "cdktf";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
@@ -32,10 +31,10 @@ export class CertificateModule extends Construct {
 
     const record = new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
-      name: Fn.element(cert.domainValidationOptions, 0)["resourceRecordName"],
-      type: Fn.element(cert.domainValidationOptions, 0)["resourceRecordType"],
+      name: Fn.lookup(validationOption, "resourceRecordName"),
+      type: Fn.lookup(validationOption, "resourceRecordType"),
       ttl: 60,
-      records: [Fn.element(cert.domainValidationOptions, 0)["resourceRecordValue"]],
+      records: [Fn.lookup(validationOption, "resourceRecordValue")],
     });
 
     new AcmCertificateValidation(this, "cert-validate", {
