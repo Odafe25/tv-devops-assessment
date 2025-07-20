@@ -1,9 +1,10 @@
 import { Construct } from "constructs";
-import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
-import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
-import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
+import { Fn } from "cdktf";
+import { AcmCertificate, AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm";
+import { Route53Record } from "@cdktf/provider-aws/lib/route53";
 
-export interface CertificateProps {
+export interface CertProps {
+  env: string;
   domainName: string;
   subdomain: string;
   hostedZoneId: string;
@@ -12,38 +13,33 @@ export interface CertificateProps {
   albZoneId: string;
 }
 
-export class CertificateModule extends Construct {
-  public readonly certificateArn: string;
-
-  constructor(scope: Construct, id: string, props: CertificateProps) {
+export class CertModule extends Construct {
+  constructor(scope: Construct, id: string, props: CertProps) {
     super(scope, id);
-    const fqdn = `${props.subdomain}.${props.domainName}`;
 
     const cert = new AcmCertificate(this, "cert", {
-      domainName: fqdn,
+      domainName: props.subdomain,
       validationMethod: "DNS",
       lifecycle: { createBeforeDestroy: true },
       tags: { Name: props.certificateName },
     });
 
-    const opt = cert.domainValidationOptions.get(0);
-
-    new Route53Record(this, "cert-record", {
+    const record = new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
-      name: opt.resourceRecordName,
-      type: opt.resourceRecordType,
+      name: Fn.element(cert.domainValidationOptions, 0).resourceRecordName,
+      type: Fn.element(cert.domainValidationOptions, 0).resourceRecordType,
       ttl: 60,
-      records: [opt.resourceRecordValue],
+      records: [Fn.element(cert.domainValidationOptions, 0).resourceRecordValue],
     });
 
-    new AcmCertificateValidation(this, "certValidation", {
+    new AcmCertificateValidation(this, "cert-validate", {
       certificateArn: cert.arn,
-      validationRecordFqdns: [opt.resourceRecordName!],
+      validationRecordFqdns: [record.fqdn],
     });
 
     new Route53Record(this, "alb-dns", {
       zoneId: props.hostedZoneId,
-      name: fqdn,
+      name: props.subdomain,
       type: "A",
       alias: {
         name: props.albDnsName,
@@ -51,7 +47,5 @@ export class CertificateModule extends Construct {
         evaluateTargetHealth: true,
       },
     });
-
-    this.certificateArn = cert.arn;
   }
 }
