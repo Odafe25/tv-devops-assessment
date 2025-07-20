@@ -8,7 +8,7 @@ import { DataAwsAvailabilityZones } from "@cdktf/provider-aws/lib/data-aws-avail
 export interface VpcProps {
   project: string;
   cidrBlock: string;
-  maxAzs?: number; // Optional: limit number of AZs to use
+  maxAzs: number; 
 }
 
 export class VpcModule extends Construct {
@@ -26,21 +26,21 @@ export class VpcModule extends Construct {
       tags: { Name: `${props.project}-vpc` },
     });
 
-    // Get available AZs dynamically
+    
     const availableAzs = new DataAwsAvailabilityZones(this, "available", {
       state: "available",
     });
 
-    // Create a simple numeric iterator for the number of AZs we want to use
+    
     const maxAzs = props.maxAzs || 3; // Default to 3 AZs
-    const azIndexes = Array.from({ length: maxAzs }, (_, i) => i.toString());
+    const azIndexes = Array.from({ length: maxAzs }, (_, i) => i);
     const azIterator = TerraformIterator.fromList(azIndexes);
     
     const subnetResource = new Subnet(this, "subnet", {
       forEach: azIterator,
       vpcId: this.vpc.id,
-      cidrBlock: Fn.cidrsubnet(props.cidrBlock, 8, parseInt(azIterator.value)), // Use cidrsubnet function
-      availabilityZone: Fn.element(availableAzs.names, parseInt(azIterator.value)), // Get AZ by index
+      cidrBlock: Fn.cidrsubnet(props.cidrBlock, 8, azIterator.value), // azIterator.value is already a number
+      availabilityZone: Fn.element(availableAzs.names, azIterator.value), // azIterator.value is already a number
       mapPublicIpOnLaunch: true,
       tags: { 
         Name: `${props.project}-subnet-\${${azIterator.value}}` 
