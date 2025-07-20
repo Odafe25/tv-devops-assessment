@@ -75,4 +75,4 @@ jobs:
           AWS_REGION: $AWS_REGION
           ENV: ${{ matrix.environment }}
           DOMAIN_NAME: $DOMAIN_NAME
-        run: cdktf deploy --auto-approve
+        run: cdktf deploy --auto-approve --app "node main.js"
