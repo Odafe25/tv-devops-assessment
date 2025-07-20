@@ -5,7 +5,6 @@ import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificat
 import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
 
 export interface CertProps {
-  env: string;
   domainName: string;
   subdomain: string;
   hostedZoneId: string;
@@ -27,12 +26,14 @@ export class CertificateModule extends Construct {
       tags: { Name: props.certificateName },
     });
 
+    const validationOption = Fn.element(cert.domainValidationOptions, 0);
+
     const record = new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
-      name: Fn.element(cert.domainValidationOptions, 0).resourceRecordName,
-      type: Fn.element(cert.domainValidationOptions, 0).resourceRecordType,
+      name: validationOption["resourceRecordName"],
+      type: validationOption["resourceRecordType"],
       ttl: 60,
-      records: [Fn.element(cert.domainValidationOptions, 0).resourceRecordValue],
+      records: [validationOption["resourceRecordValue"]],
     });
 
     new AcmCertificateValidation(this, "cert-validate", {
