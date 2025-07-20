@@ -13,7 +13,7 @@
     "author": "OdafeAsagba",
     "license": "MIT",
     "dependencies": {
-      "@cdktf/provider-aws": "^18.0.27",
+      "@cdktf/provider-aws": "^19.0.0",
       "cdktf": "^0.20.12",
       "dotenv": "^16.3.1"
     },
