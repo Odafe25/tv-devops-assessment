@@ -1,7 +1,7 @@
 import { Construct } from "constructs";
 import { Fn } from "cdktf";
-import { AcmCertificate, AcmCertificateValidation } from "@cdktf/provider-aws"; //  /lib/acm
-import { Route53Record } from "@cdktf/provider-aws";  // /lib/route53
+import { acmCertificate, acmCertificateValidation } from "@cdktf/provider-aws"; //  /lib/acm
+import { route53Record } from "@cdktf/provider-aws";  // /lib/route53
 
 export interface CertProps {
   env: string;
