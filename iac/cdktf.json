@@ -1,0 +1,10 @@
+{
+    "language": "typescript",
+    "app": "node main.js",
+    "terraformProviders": [
+      "hashicorp/aws@~> 5.0"
+    ],
+    "codeMakerOutput": "imports",
+    "projectId": "tv-devops-project"
+  }
+  
