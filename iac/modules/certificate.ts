@@ -3,7 +3,6 @@ import { Fn, TerraformOutput } from "cdktf";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
 import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
 import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
-import { Token } from "cdktf";
 
 export interface CertProps {
   env: string;
@@ -28,9 +27,11 @@ export class CertificateModule extends Construct {
       tags: { Name: props.certificateName },
     });
 
-    const recordName = Token.asString(Fn.lookup(Fn.element(cert.domainValidationOptions, 0), "resourceRecordName"));
-    const recordType = Token.asString(Fn.lookup(Fn.element(cert.domainValidationOptions, 0), "resourceRecordType"));
-    const recordValue = Token.asString(Fn.lookup(Fn.element(cert.domainValidationOptions, 0), "resourceRecordValue"));
+    const firstValidationOption = Fn.element(cert.domainValidationOptions, 0);
+    
+    const recordName = Fn.lookup(firstValidationOption, "resource_record_name", "");
+    const recordType = Fn.lookup(firstValidationOption, "resource_record_type", "");
+    const recordValue = Fn.lookup(firstValidationOption, "resource_record_value", "");
 
     const record = new Route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
