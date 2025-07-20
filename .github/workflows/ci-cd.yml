@@ -63,10 +63,19 @@ jobs:
       - name: Install Node type definitions
         working-directory: ./iac
         run: npm install --save-dev @types/node
+      
+      - name: Install ts-node
+        working-directory: ./iac
+        run: npm install --save-dev ts-node
 
       - name: Compile TypeScript
         working-directory: ./iac
         run: npm run build
+
+      - name: Install Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
 
       - name: Deploy to ${{ matrix.environment }} with CDKTF
         working-directory: ./iac

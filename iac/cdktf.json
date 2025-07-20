@@ -1,6 +1,6 @@
 {
     "language": "typescript",
-    "app": "node main.js",
+    "app": "ts-node main.ts",
     "terraformProviders": [
       "hashicorp/aws@~> 5.0"
     ],
