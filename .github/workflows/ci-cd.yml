@@ -85,8 +85,8 @@ jobs:
       - name: Deploy to ${{ matrix.environment }} with CDKTF
         working-directory: ./iac
         env:
-          ECR_IMAGE: $ECR_IMAGE
-          AWS_REGION: $AWS_REGION
+          ECR_IMAGE: ${{ env.ECR_REGISTRY }}/tv-devops:latest
+          AWS_REGION: ${{ vars.AWS_REGION }}
           ENV: ${{ matrix.environment }}
-          DOMAIN_NAME: $DOMAIN_NAME
+          DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
         run: cdktf deploy --auto-approve 
