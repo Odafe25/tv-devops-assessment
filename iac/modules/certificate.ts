@@ -17,14 +17,14 @@ export class CertificateModule extends Construct {
   constructor(scope: Construct, id: string, props: CertProps) {
     super(scope, id);
 
-    const cert = new AcmCertificate(this, "cert", {
+    const cert = new acmCertificate(this, "cert", {
       domainName: props.subdomain,
       validationMethod: "DNS",
       lifecycle: { createBeforeDestroy: true },
       tags: { Name: props.certificateName },
     });
 
-    const record = new Route53Record(this, "cert-record", {
+    const record = new route53Record(this, "cert-record", {
       zoneId: props.hostedZoneId,
       name: Fn.element(cert.domainValidationOptions, 0).resourceRecordName,
       type: Fn.element(cert.domainValidationOptions, 0).resourceRecordType,
@@ -32,12 +32,12 @@ export class CertificateModule extends Construct {
       records: [Fn.element(cert.domainValidationOptions, 0).resourceRecordValue],
     });
 
-    new AcmCertificateValidation(this, "cert-validate", {
+    new acmCertificateValidation(this, "cert-validate", {
       certificateArn: cert.arn,
       validationRecordFqdns: [record.fqdn],
     });
 
-    new Route53Record(this, "alb-dns", {
+    new route53Record(this, "alb-dns", {
       zoneId: props.hostedZoneId,
       name: props.subdomain,
       type: "A",
