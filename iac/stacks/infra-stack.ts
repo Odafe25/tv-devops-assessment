@@ -42,7 +42,7 @@ export class InfraStack extends TerraformStack {
     const vpc = new VpcModule(this, "vpc", {
       project,
       cidrBlock: process.env.VPC_CIDR || "10.0.0.0/16",
-      azs: azs.names,
+      maxAzs: 3
     });
 
     // ECR
