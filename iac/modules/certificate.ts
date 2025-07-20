@@ -1,8 +1,9 @@
 import { Construct } from "constructs";
-import { Fn, TerraformOutput } from "cdktf";
+import { TerraformOutput, TerraformIterator } from "cdktf";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
 import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
 import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
+import { DataAwsRoute53Zone } from "@cdktf/provider-aws/lib/data-aws-route53-zone";
 
 export interface CertProps {
   env: string;
@@ -27,25 +28,29 @@ export class CertificateModule extends Construct {
       tags: { Name: props.certificateName },
     });
 
-    const firstValidationOption = Fn.element(cert.domainValidationOptions, 0);
     
-    const recordName = Fn.lookup(firstValidationOption, "resource_record_name", "");
-    const recordType = Fn.lookup(firstValidationOption, "resource_record_type", "");
-    const recordValue = Fn.lookup(firstValidationOption, "resource_record_value", "");
-
-    const record = new Route53Record(this, "cert-record", {
+    const validationIterator = TerraformIterator.fromMap(cert.domainValidationOptions);
+    
+    const validationRecord = new Route53Record(this, "cert-validation-record", {
+      forEach: validationIterator,
       zoneId: props.hostedZoneId,
-      name: recordName,
-      type: recordType,
+      name: validationIterator.getString("resource_record_name"),
+      type: validationIterator.getString("resource_record_type"), 
       ttl: 60,
-      records: [recordValue],
+      records: [validationIterator.getString("resource_record_value")],
+      allowOverwrite: true,
     });
 
+    
     new AcmCertificateValidation(this, "cert-validate", {
       certificateArn: cert.arn,
-      validationRecordFqdns: [record.fqdn],
+      validationRecordFqdns: validationRecord.fqdn,
+      timeouts: {
+        create: "5m",
+      },
     });
 
+    
     new Route53Record(this, "alb-dns", {
       zoneId: props.hostedZoneId,
       name: props.subdomain,
