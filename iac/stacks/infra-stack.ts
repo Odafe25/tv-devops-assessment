@@ -79,7 +79,7 @@ export class InfraStack extends TerraformStack {
     const alb = new AlbModule(this, "alb", {
       project,
       env,
-      vpc,
+      vpc: vpc.vpc,
       subnets:        vpc.publicSubnets.map(s => s.id),
       securityGroups: [ vpc.securityGroup.id ],
     });
